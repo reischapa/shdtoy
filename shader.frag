@@ -9,7 +9,7 @@ uniform vec4  u_date;
 uniform vec2  u_resolution;
 uniform vec2  u_mouse;
 
-#define MAX_STEPS 1000
+#define MAX_STEPS 2000
 #define MAX_DIST 100.0
 #define SURF_DIST 0.001
 #define PI 3.14159265359
@@ -37,16 +37,14 @@ mat4 rotateXW(float angle) {
     float c = cos(angle);
     float s = sin(angle);
     return mat4(1.0, 0.0, 0.0, 0.0,
-                0.0,   c, -s, 0.0,
-                0.0,   s,  c, 0.0,
-                0.0, 0.0,  0, 1.0);
+                0.0,   c, 0.0, -s,
+                0.0, 0.0,  1, 0.0,
+                0.0, s,  0, c);
 }
 
-float sdf(vec3 p) {
-    vec4 center = vec4(-1, 0, 2, 1);
+vec4 center = vec4(1.0 * cos(u_time), 0, 2.0, 1.0);
 
-    float c = cos(u_time);
-    float s = sin(u_time);
+float sdf(vec3 p) {
 
 //    float x = p.x;
 //    float y = p.y;
@@ -54,16 +52,16 @@ float sdf(vec3 p) {
 //    float w1 = s * p.y + c * 1.0;
 //    float w2 = 1;
 
-    float x = p.x * cos(u_time);
-    float y = p.y * sin(u_time - PI/2);
-    float z = p.z * cos(u_time);
-    float w1 = 1;
-    float w2 = 1;
+//    float x = p.x * cos(u_time);
+//    float y = p.y * sin(u_time - PI/2);
+//    float z = p.z * cos(u_time);
+//    float w1 = 1;
+//    float w2 = 1;
 
-    float alt = sqrt(pow(x - center.x, 2)  + pow(y - center.y, 2) + pow(z - center.z, 2) + pow(w1 - center.w, 2) + pow(w2 - 1, 2));
+//    float alt = sqrt(pow(x - center.x, 2)  + pow(y - center.y, 2) + pow(z - center.z, 2) + pow(w1 - center.w, 2) + pow(w2 - 1, 2));
+//    return alt - 1.1;
 
-//    return length((rotateXW(u_time) * vec4(p.x, p.y, p.z, 1)) - center) - 1.1; // Sphere of radius 1 at origin
-    return alt - 1.1;
+    return length(vec4(sin(pow(p.x * 0.001, 2.1)), sin(pow(p.y * 0.001, 2.1)), cos(p.z), 1.0) - center) - 1.2 ; // Sphere of radius 1 at origin
 }
 
 // Function to compute the normal from an SDF
@@ -79,6 +77,7 @@ vec3 getNormal(vec3 p, float epsilon) {
 
 // Raymarching function
 float rayMarch(vec4 ro, vec4 rd) {
+
     float dO = 0.0; // Total distance traveled
 
     for (int i = 0; i < MAX_STEPS; i++) {
@@ -103,35 +102,42 @@ float rayMarch(vec4 ro, vec4 rd) {
 
 void main() {
     vec2 uv = (gl_FragCoord.xy / u_resolution.xy) * 2.0 - 1.0;
-    uv.x *= u_resolution.x / u_resolution.y; // Aspect ratio correction
+    uv.x *= u_resolution.x / u_resolution.y;
 
     vec2 mouseNorm = (u_mouse.xy / u_resolution.xy) * 2.0 - 1.0;
-    float yaw = mouseNorm.x * PI ;   // Left-Right rotation
-    float pitch = mouseNorm.y * PI * 0.5; // Up-Down rotation
+    float yaw = mouseNorm.x * PI ;
+    float pitch = mouseNorm.y * PI;
 
-    vec4 ro = vec4(0.0, 0.0, -3.0, 1.0); // Initial camera position
+    center = center + vec4(0.1, -0.5, 0, 0.0);
+
+    vec4 ro = vec4(0.0, 0.0, -3.0, 1.0);
     mat4 rotY = rotateY(yaw);
     mat4 rotX = rotateX(pitch);
-    ro = rotY * rotX * ro;
+
+    ro +=  u_time * vec4(1, 1, 1, 0);
+    // ro = rotY * rotX * ro;
 
     vec4 rd = normalize(rotY * rotX * vec4(uv, 1.0, 1.0)); // Rotate the view direction
 
     float t = rayMarch(ro, rd);
 
-    vec3 backgroundColor = vec3(0.4, 0.1, 0.2); // Background color
-    vec3 sphereColor = vec3(0.4 * sin(u_time), 0.6, 1.0);
-    vec3 lightDir = normalize(vec3(1.0, 1.0, -1.0));
+    vec3 backgroundColor = vec3(0.9, 0.7, 0.4);
+    vec3 sphereColor = vec3(0.4, 0.6, 1.0);
+    vec4 lightDir = normalize(rotY * rotX * vec4(0, 0, -3.0, 1));
 
     if (t < MAX_DIST) {
-        vec4 hitPoint = ro + t * rd;
+        if (t > 0.0) {
+            vec4 hitPoint = ro + t * rd;
 
-        vec3 normal = getNormal(vec3(hitPoint.x, hitPoint.y, hitPoint.z), 0.001);
+            vec3 normal = getNormal(vec3(hitPoint.x, hitPoint.y, hitPoint.z), 0.001);
 
-        float diff = max(dot(normal, lightDir), 0.0);
+            float diff = max(dot(normal, vec3(lightDir.x, lightDir.y, lightDir.z)), 0.0);
 
-        vec3 color = sphereColor * diff + 0.1; // Blueish tint with ambient
+            vec3 color = sphereColor * diff + 0.5;
 
-        gl_FragColor = vec4(color, 1.0);
+            gl_FragColor = vec4(color.x, color.y * 0.3, color.z * 0.3, 1.0);
+        }
+
     } else {
         gl_FragColor = vec4(backgroundColor, 1.0);
     }
