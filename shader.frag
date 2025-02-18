@@ -44,18 +44,18 @@ mat4 rotateXW(float angle) {
 }
 
 float sdf(vec3 p) {
-    vec4 center = vec4(0, 0, 0, 1.0);
+    vec4 center = vec4(0.0, 0.0, 0.0, 1.0);
 
     // for purposes of rotation/translation in 4d space using 5d linear transformations
     float x = p.x;
     float y = p.y;
     float z = p.z;
-    float w1 = 1;
-    float w2 = 1;
+    float w1 = 1.0;
+    float w2 = 1.0;
 
     float r = 0.9;
 
-    return sqrt(pow(x - center.x, 2) + pow(y - center.y, 2) + pow(z - center.z, 2) + pow(w1 - center.w, 2) + pow(w2 - 1, 2)) - r;
+    return sqrt(pow(x - center.x, 2.0) + pow(y - center.y, 2.0) + pow(z - center.z, 2.0) + pow(w1 - center.w, 2.0) + pow(w2 - 1.0, 2.0)) - r;
 }
 
 // Function to compute the normal from an SDF
@@ -123,8 +123,8 @@ void main() {
     uv.x *= u_resolution.x / u_resolution.y;
 
     vec2 mouseNorm = (u_mouse.xy / u_resolution.xy) * 2.0 - 1.0;
-    float yaw = mouseNorm.x * PI / 2;
-    float pitch = mouseNorm.y * PI / 2;
+    float yaw = mouseNorm.x * PI / 2.0;
+    float pitch = mouseNorm.y * PI / 2.0;
 
     vec4 ro = vec4(0, 0, -4.0, 1.0);
     mat4 rotY = rotateY(yaw);
@@ -169,14 +169,14 @@ void main() {
             reflectionStrength *= 0.5; // Reduce reflection intensity
         } else {
             vec4 i = intersectRayPlane(reflectionOrigin.xyz, reflectionRay.xyz, floorPlane);
-            if (i.w > 0) {
+            if (i.w > 0.0) {
                 float fx = abs(i.x - ro.x) * 0.25;
                 float fz = abs(i.z - ro.z) * 0.25;
 
-                if (mod(floor(fz), 2.0) == 0) {
-                    finalColor = (mod(floor(fx), 2.0) == 0) ? floorColor1 : floorColor2;
+                if (mod(floor(fz), 2.0) == 0.0) {
+                    finalColor = (mod(floor(fx), 2.0) == 0.0) ? floorColor1 : floorColor2;
                 } else {
-                    finalColor = (mod(floor(fx), 2.0) == 0) ? floorColor2 : floorColor1;
+                    finalColor = (mod(floor(fx), 2.0) == 0.0) ? floorColor2 : floorColor1;
                 }
 
                 break;
